@@ -8,23 +8,26 @@
 
 namespace app\extensions\esbjerg_bindninger\api;
 
+use app\inc\Controller;
 use app\inc\Input;
 use app\extensions\esbjerg_bindninger\models\Search as SearchModel;
 
 
-class Search extends \app\inc\Controller
+class Search extends Controller
 {
+    const SCHEMA = "kommuneplan22";
 
     function __construct()
     {
         parent::__construct();
     }
 
+    /**
+     * @return array<mixed>
+     */
     public function get_index(): array
     {
         $search = new SearchModel();
-
         return array("data" => $search->go(Input::getPath()->part(5)));
     }
-
 }

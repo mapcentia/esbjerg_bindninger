@@ -3,18 +3,25 @@
 namespace app\extensions\esbjerg_bindninger\models;
 
 use app\inc\Model;
+use app\extensions\esbjerg_bindninger\api\Search as ApiSearch;
+use PDOException;
 
 class Search extends Model
 {
-    public function go($id, $overwrite = true)
+    /**
+     * @param string $id
+     * @param bool $overwrite
+     * @return array<mixed>
+     */
+    public function go(string $id, bool $overwrite = true): array
     {
         $bindings = array();
 
-        $query = "SELECT * FROM kommuneplan18.bindninger_planid WHERE planid=:id";
+        $query = "SELECT * FROM " . ApiSearch::SCHEMA . ".bindninger_planid WHERE planid=:id";
         $res = $this->prepare($query);
         try {
             $res->execute(array("id" => $id));
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             $response['success'] = false;
             $response['message'] = $e->getMessage();
             $response['code'] = 400;
@@ -25,11 +32,11 @@ class Search extends Model
 
 
         if (($overwrite) || (!$exist)) {
-            $query = "SELECT ST_Astext(the_geom) as wkt FROM kommuneplan18.kpplandk2 WHERE planid=:id";
+            $query = "SELECT ST_Astext(the_geom) as wkt FROM " . ApiSearch::SCHEMA . ".kpplandk2 WHERE planid=:id";
             $res = $this->prepare($query);
             try {
                 $res->execute(array("id" => $id));
-            } catch (\PDOException $e) {
+            } catch (PDOException $e) {
                 $response['success'] = false;
                 $response['message'] = $e->getMessage();
                 $response['code'] = 400;
@@ -39,14 +46,9 @@ class Search extends Model
             $response['success'] = true;
             $response['data'] = $row["wkt"];
 
+
             $service = "https://webkort.esbjergkommune.dk/cbkort?";
-            $qstr = "page=fkgws1-konflikt&sagstype=std_soegning&outputformat=json&raw=false&geometri=" . urlencode($response['data']);
-
-            $url = $service . $qstr;
-
-            //die($url);
-
-            //$res = json_decode(Util::wget($url), true);
+            $qstr = "page=fkgws1-konflikt&sagstype=kommuneplan2022_34&outputformat=json&raw=false&geometri=" . urlencode($response['data']);
 
             $ch = curl_init($service);
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
@@ -55,24 +57,15 @@ class Search extends Model
             curl_setopt($ch, CURLOPT_VERBOSE, true);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
             curl_setopt($ch, CURLOPT_TIMEOUT, 0);
-
-
             $res = json_decode(curl_exec($ch), true);
-
             curl_close($ch);
 
-            //die($res);
-
-
             $Arealbindninger = new Arealbindninger();
-
             $themes = $Arealbindninger->get();
-
-
+            $targetname = null;
+            $count = null;
             foreach ($themes["data"] as $theme) {
-
                 foreach ($res["row"][0]["row"][0]["row"] as $resArr) {
-
                     $attrs = array();
                     for ($i = 0; $i < sizeof($resArr["row"]); $i++) {
                         if (isset($resArr["row"][$i]["targetname"])) {
@@ -81,62 +74,47 @@ class Search extends Model
                         if (isset($resArr["row"][$i]["count"])) {
                             $count = $resArr["row"][$i]["count"];
                         }
-
                         if (isset($resArr["row"][$i]["row"])) {
                             foreach ($resArr["row"][$i]["row"] as $r) {
-                                if ($theme["sps_themename"] == "theme-" . $targetname && (isset($theme["bindattribut"]) && isset($theme["bindvalue"]) && $theme["bindattribut"] != "" && $theme["bindvalue"] != "")) {
-                                    // print_r($r);
+                                if ($theme["sps_themename"] == $targetname && (isset($theme["bindattribut"]) && isset($theme["bindvalue"]) && $theme["bindattribut"] != "" && $theme["bindvalue"] != "")) {
+//                                     print_r($r);
                                     $attrs[] = $r["value"];
                                 }
                             }
                         }
                     }
-                    if (sizeof($attrs) > 0) {
-                        //echo $theme["sps_themename"] . " -> " . $theme["bindattribut"] . "\n";
-                        //print_r($attrs);
-                        //print_r($resArr);
 
-                    }
-
-                    if ($theme["sps_themename"] == "theme-" . $targetname && $count > 0) {
-
+                    if ($theme["sps_themename"] == $targetname && $count > 0) {
                         if (isset($theme["bindattribut"]) && isset($theme["bindvalue"]) && $theme["bindattribut"] != "" && $theme["bindvalue"] != "") {
-
-                            foreach ($attrs as $k => $v) {
-
+                            foreach ($attrs as $v) {
                                 if ($v == $theme["bindvalue"]) {
                                     $bindings[$theme["rammefelt"]] = $theme["rammevalue"];
                                 }
-
                             }
-
                         } else {
                             $bindings[$theme["rammefelt"]] = $theme["rammevalue"];
-
                         }
-
-                    } else if ($theme["sps_themename"] == "theme-" . $targetname && $count == 0) {
+                    } else if ($theme["sps_themename"] == $targetname && $count == 0) {
                         $bindings[$theme["rammefelt"]] = null;
                     }
                 }
             }
-
             arsort($bindings);
-
-
-            $query = "DELETE FROM kommuneplan18.bindninger_planid WHERE planid=:id";
+            $query = "DELETE FROM " . ApiSearch::SCHEMA . ".bindninger_planid WHERE planid=:id";
             $res = $this->prepare($query);
             try {
                 $res->execute(array("id" => $id));
-            } catch (\PDOException $e) {
-                echo "Fandtes ikke\n";
+            } catch (PDOException $e) {
+                $response['success'] = false;
+                $response['message'] = $e->getMessage();
+                $response['code'] = 400;
+                return $response;
             }
-
-            $query = "INSERT INTO kommuneplan18.bindninger_planid (planid,bindninger) VALUES (:id, :bindninger)";
+            $query = "INSERT INTO " . ApiSearch::SCHEMA . ".bindninger_planid (planid,bindninger) VALUES (:id, :bindninger)";
             $res = $this->prepare($query);
             try {
                 $res->execute(array("id" => $id, "bindninger" => json_encode($bindings)));
-            } catch (\PDOException $e) {
+            } catch (PDOException $e) {
                 $response['success'] = false;
                 $response['message'] = $e->getMessage();
                 $response['code'] = 400;
@@ -149,5 +127,4 @@ class Search extends Model
         }
         return $response;
     }
-
 }

@@ -3,10 +3,14 @@
 namespace app\extensions\esbjerg_bindninger\models;
 
 use app\inc\Model;
-use app\models\Database;
+use app\extensions\esbjerg_bindninger\api\Search as ApiSearch;
+use PDOException;
 
 class Codes extends Model
 {
+    /**
+     * @var array<mixed>
+     */
     private $codes;
 
     public function __construct()
@@ -14,7 +18,13 @@ class Codes extends Model
         parent::__construct();
     }
 
-    public function getRefs($varName, $rel = null, $json = null)
+    /**
+     * @param string $varName
+     * @param string|null $rel
+     * @param bool $json
+     * @return void
+     */
+    public function getRefs(string $varName, string $rel = null, bool $json = false) : void
     {
 
         $arr = array(
@@ -42,53 +52,58 @@ class Codes extends Model
                 if ($table == "hovedanv") {
                     $this->getCodes($table, false);
                 } else {
-                    $this->getCodes($table, true);
+                    $this->getCodes($table);
 
                 }
             }
         }
 
         if (!$json) {
-            print("var {$varName} = ");
+            print("var $varName = ");
         }
         print(json_encode($this->codes));
         die();
     }
 
-    public function getFields($varName, $json = false)
+    public function getFields(string $varName, bool $json = false) : void
     {
-        $query = "SELECT rammefelt, head FROM arealbindninger.tforms120870101008319_join";
+        $query = "SELECT rammefelt, header FROM " . ApiSearch::SCHEMA . ".arealbindninger_kp22";
 
         $res = $this->prepare($query);
         try {
             $res->execute();
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             throw $e;
         }
         while ($row = $this->fetchRow($res)) {
-            $this->codes[$row["rammefelt"]] = $row["head"];
+            $this->codes[$row["rammefelt"]] = $row["header"];
         }
 
         if (!$json) {
-            print("var {$varName} = ");
+            print("var $varName = ");
         }
         print(json_encode($this->codes));
 
         die();
     }
 
-    private function getCodes($table, $join = true)
+    /**
+     * @param string $table
+     * @param bool $join
+     * @return void
+     */
+    private function getCodes(string $table, bool $join = true) : void
     {
         if ($join) {
-            $query = "SELECT fieldkey, textvalue||'|'||textvalue2 as text FROM public.{$table}";
+            $query = "SELECT fieldkey, textvalue||'|'||textvalue2 as text FROM public.$table";
         } else {
-            $query = "SELECT fieldkey, textvalue as text FROM public.{$table}";
+            $query = "SELECT fieldkey, textvalue as text FROM public.$table";
 
         }
         $res = $this->prepare($query);
         try {
             $res->execute();
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             throw $e;
         }
         while ($row = $this->fetchRow($res)) {
