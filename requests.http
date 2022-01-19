@@ -1,4 +1,4 @@
-#GET http://cowi.mapcentia.com/extensions/esbjerg_bindninger/api/search/3751864
-GET http://127.0.0.1:8080/extensions/esbjerg_bindninger/api/search/9688178
+GET http://cowi.mapcentia.com/extensions/esbjerg_bindninger/api/search/3751864
+#GET http://127.0.0.1:8080/extensions/esbjerg_bindninger/api/search/9688178
 Content-Type: application/json
 
