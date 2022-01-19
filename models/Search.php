@@ -32,7 +32,7 @@ class Search extends Model
 
 
         if (($overwrite) || (!$exist)) {
-            $query = "SELECT ST_Astext(the_geom) as wkt FROM " . ApiSearch::SCHEMA . ".kpplandk2 WHERE planid=:id";
+            $query = "SELECT ST_Astext(the_geom) as wkt FROM " . ApiSearch::SCHEMA . ".kommuneplanramme_geom WHERE planid=:id";
             $res = $this->prepare($query);
             try {
                 $res->execute(array("id" => $id));
