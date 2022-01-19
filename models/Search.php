@@ -77,7 +77,6 @@ class Search extends Model
                         if (isset($resArr["row"][$i]["row"])) {
                             foreach ($resArr["row"][$i]["row"] as $r) {
                                 if ($theme["sps_themename"] == $targetname && (isset($theme["bindattribut"]) && isset($theme["bindvalue"]) && $theme["bindattribut"] != "" && $theme["bindvalue"] != "")) {
-//                                     print_r($r);
                                     $attrs[] = $r["value"];
                                 }
                             }
