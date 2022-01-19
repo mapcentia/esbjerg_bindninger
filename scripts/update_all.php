@@ -10,7 +10,7 @@ include_once("../../../conf/App.php");
 new \app\conf\App();
 Database::setDb("esbjerg");
 $conn = new \app\inc\Model();
-$sql = "SELECT * FROM _cowiplan.kommuneplanramme_attr";
+$sql = "SELECT *  FROM " . ApiSearch::SCHEMA . ".kommuneplanramme_geom";
 $result = $conn->execQuery($sql);
 echo $conn->PDOerror[0];
 $count = 0;
