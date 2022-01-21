@@ -10,7 +10,7 @@ include_once("../../../conf/App.php");
 new \app\conf\App();
 Database::setDb("esbjerg");
 $conn = new \app\inc\Model();
-$sql = "SELECT *  FROM " . ApiSearch::SCHEMA . ".kommuneplanramme_geom";
+$sql = "SELECT *  FROM " . ApiSearch::SCHEMA . ".kommuneplanramme_geom_kp22";
 $result = $conn->execQuery($sql);
 echo $conn->PDOerror[0];
 $count = 0;

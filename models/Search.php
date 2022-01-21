@@ -32,7 +32,7 @@ class Search extends Model
 
 
         if (($overwrite) || (!$exist)) {
-            $query = "SELECT ST_Astext(the_geom) as wkt FROM " . ApiSearch::SCHEMA . ".kommuneplanramme_geom WHERE planid=:id";
+            $query = "SELECT ST_Astext(the_geom) as wkt FROM " . ApiSearch::SCHEMA . ".kommuneplanramme_geom_kp22 WHERE planid=:id";
             $res = $this->prepare($query);
             try {
                 $res->execute(array("id" => $id));
@@ -54,9 +54,10 @@ class Search extends Model
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "POST");
             curl_setopt($ch, CURLOPT_POSTFIELDS, $qstr);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-            curl_setopt($ch, CURLOPT_VERBOSE, true);
+            curl_setopt($ch, CURLOPT_VERBOSE, false);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
             curl_setopt($ch, CURLOPT_TIMEOUT, 0);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
             $res = json_decode(curl_exec($ch), true);
             curl_close($ch);
 
